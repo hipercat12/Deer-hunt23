@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reh vs Hunter - Lokal</title>
+<style>
+body{margin:0; background:#88c; overflow:hidden; font-family:sans-serif;}
+canvas{display:block; background:#6b8e23;}
+#shop{position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.8); padding:10px; border-radius:10px;}
+#shop button{display:block; margin:5px 0; width:100%;}
+#adminBtn{position:absolute; top:10px; left:10px; padding:5px 10px; background:rgba(255,255,255,0.8); border-radius:5px; cursor:pointer;}
+#adminMenu{position:absolute; top:50px; left:10px; background:rgba(255,255,255,0.9); padding:10px; border-radius:10px; display:none; width:200px;}
+#adminMenu input, #adminMenu button{margin:5px 0; width:100%;}
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<div id="shop">
+<h3>Shop</h3>
+<button id="speedBtn">Schneller (+1)</button>
+<button id="invisibleBtn">Unsichtbar (5s)</button>
+<button id="skinBtn">Neuer Skin</button>
+</div>
+
+<div id="adminBtn">Admin</div>
+<div id="adminMenu">
+<input type="password" id="adminPass" placeholder="Passwort">
+<button id="unlockItems">Items freischalten</button>
+<button id="setScore">Score setzen</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let player = { x:100, y:300, width:40, height:40, color:'brown', speed:5, invisible:false, skin:'default', score:0 };
+let hunter = { x:700, y:300, width:50, height:50, speed:3 };
+let itemsUnlocked = { speed:false, invisible:false, skin:false };
+
+let keys = {};
+document.addEventListener('keydown', e=>keys[e.key]=true);
+document.addEventListener('keyup', e=>keys[e.key]=false);
+
+function movePlayer(){
+    if(keys['ArrowUp']) player.y -= player.speed;
+    if(keys['ArrowDown']) player.y += player.speed;
+    if(keys['ArrowLeft']) player.x -= player.speed;
+    if(keys['ArrowRight']) player.x += player.speed;
+    if(player.x<0) player.x=0; if(player.x>canvas.width-player.width) player.x=canvas.width-player.width;
+    if(player.y<0) player.y=0; if(player.y>canvas.height-player.height) player.y=canvas.height-player.height;
+}
+
+function moveHunter(){
+    if(hunter.x < player.x) hunter.x += hunter.speed;
+    if(hunter.x > player.x) hunter.x -= hunter.speed;
+    if(hunter.y < player.y) hunter.y += hunter.speed;
+    if(hunter.y > player.y) hunter.y -= hunter.speed;
+}
+
+function checkCollision(){
+    if(player.x < hunter.x + hunter.width &&
+       player.x + player.width > hunter.x &&
+       player.y < hunter.y + hunter.height &&
+       player.y + player.height > hunter.y){
+           alert('Du wurdest vom Hunter gefangen! Score: '+player.score);
+           player.score = 0;
+           player.x = 100; player.y = 300;
+           hunter.x = 700; hunter.y = 300;
+    }
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Spieler
+    ctx.fillStyle = player.invisible ? 'rgba(0,0,0,0.2)' : player.color;
+    ctx.fillRect(player.x,player.y,player.width,player.height);
+    // Hunter
+    ctx.fillStyle = 'red';
+    ctx.fillRect(hunter.x,hunter.y,hunter.width,hunter.height);
+    // Score
+    ctx.fillStyle='white';
+    ctx.font='20px sans-serif';
+    ctx.fillText('Score: '+player.score,10,50);
+    requestAnimationFrame(draw);
+}
+
+function gameLoop(){
+    movePlayer();
+    moveHunter();
+    checkCollision();
+    player.score += 1;
+}
+
+setInterval(gameLoop,1000/30);
+draw();
+
+// Shop
+document.getElementById('speedBtn').onclick = ()=>{
+    if(itemsUnlocked.speed){ player.speed +=1; } else { alert('Item nicht freigeschaltet'); }
+};
+document.getElementById('invisibleBtn').onclick = ()=>{
+    if(itemsUnlocked.invisible){
+        player.invisible=true;
+        setTimeout(()=>player.invisible=false,5000);
+    } else { alert('Item nicht freigeschaltet'); }
+};
+document.getElementById('skinBtn').onclick = ()=>{
+    if(itemsUnlocked.skin){
+        player.skin='special';
+        player.color='orange';
+    } else { alert('Item nicht freigeschaltet'); }
+};
+
+// Admin
+document.getElementById('adminBtn').onclick = ()=>{
+    const menu = document.getElementById('adminMenu');
+    menu.style.display = menu.style.display==='none'?'block':'none';
+};
+document.getElementById('unlockItems').onclick = ()=>{
+    const pass = document.getElementById('adminPass').value;
+    if(pass==='admin123'){
+        itemsUnlocked.speed=true;
+        itemsUnlocked.invisible=true;
+        itemsUnlocked.skin=true;
+        alert('Items freigeschaltet!');
+    } else alert('Falsches Passwort!');
+};
+document.getElementById('setScore').onclick = ()=>{
+    const pass = document.getElementById('adminPass').value;
+    if(pass==='admin123'){
+        const s = parseInt(prompt('Neuer Score:'));
+        if(!isNaN(s)) player.score=s;
+    } else alert('Falsches Passwort!');
+};
+</script>
+</body>
+</html>
